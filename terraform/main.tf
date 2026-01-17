@@ -18,3 +18,9 @@ provider "google" {
   project = local.project_id
   credentials = file("/Users/wataru/.config/gcloud/keys/personal-terraform-admin.json")
 }
+
+# create a service account
+resource "google_service_account" "dami_sa" {
+  account_id   = "${local.namespace}-testing-sa"
+  display_name = "Dami Testing Service Account"
+}

@@ -12,6 +12,9 @@ class GCSLocation:
     bucket: str
     path: str
 
+    def get_uri(self) -> str:
+        return f"gs://{self.bucket}/{self.path}"
+
 
 GCSPath = str | GCSLocation
 
@@ -40,34 +43,30 @@ class GCSHandler:
         bucket_name, blob_name = path.split("/", 1)
         return GCSLocation(bucket=bucket_name, path=blob_name)
 
-    def _get_blob(self, loc: GCSLocation) -> Blob | None:
+    def get_blob(self, loc: GCSLocation) -> Blob | None:
         bucket = self.client.get_bucket(loc.bucket)
         blob = bucket.get_blob(loc.path)
         return blob
     
-    def get_latest_blob(self, prefix: GCSPath) -> Blob | None:
+    def get_latest_blob(self, prefix: GCSPath, suffix: str) -> Blob | None:
         """
         in a given prefix, get the latest blob
         """
         loc = self._path_to_location(prefix)
         bucket = self.client.get_bucket(loc.bucket)
-        blobs = list(self.client.list_blobs(bucket, prefix=loc.path))
+        blobs = [b for b in self.client.list_blobs(bucket, prefix=loc.path) if b.name.endswith(suffix)]
         if len(blobs) == 0:
             return None
         latest_blob = max(blobs, key=lambda b: b.updated)
         return latest_blob
 
-    def download_df(self, path: GCSPath) -> pl.DataFrame:
-        loc = self._path_to_location(path)
-        extension = loc.path.split(".")[-1]
+    def download_df(self, blob: Blob) -> pl.DataFrame:
+        assert blob.name is not None
+        extension = blob.name.split(".")[-1]
         try:
             loader = EXTENSION_TO_LOADER[extension]
         except KeyError:
             raise UnsupportedFileTypeError(f"Unsupported file type: {extension}")
-        bucket = self.client.get_bucket(loc.bucket)
-        blob = bucket.get_blob(loc.path)
-        if blob is None:
-            raise FileNotFoundError(f"File not found: gs://{loc.bucket}/{loc.path}")
         data = blob.download_as_bytes() 
-        data = pl.read_csv(data)
+        data = loader(data)
         return data

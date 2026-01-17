@@ -5,8 +5,16 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "dependency-injector>=4.48.3",
     "google-cloud-bigquery>=3.40.0",
     "google-cloud-storage>=3.8.0",
+    "loguru>=0.7.3",
     "polars>=1.37.1",
     "pydantic>=2.12.5",
+]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=9.0.2",
+    "ruff>=0.14.13",
 ]
