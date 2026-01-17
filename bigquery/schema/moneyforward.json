@@ -1,0 +1,62 @@
+[
+  {
+    "name": "is_calculation_target",
+    "type": "INTEGER",
+    "mode": "NULLABLE",
+    "description": "計算対象 (1: Target, 0: Non-target)"
+  },
+  {
+    "name": "transaction_date",
+    "type": "DATE",
+    "mode": "NULLABLE",
+    "description": "日付"
+  },
+  {
+    "name": "content",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "内容"
+  },
+  {
+    "name": "amount",
+    "type": "INTEGER",
+    "mode": "NULLABLE",
+    "description": "金額（円）"
+  },
+  {
+    "name": "financial_institution",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "保有金融機関"
+  },
+  {
+    "name": "major_category",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "大項目"
+  },
+  {
+    "name": "minor_category",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "中項目"
+  },
+  {
+    "name": "memo",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "メモ"
+  },
+  {
+    "name": "is_transfer",
+    "type": "INTEGER",
+    "mode": "NULLABLE",
+    "description": "振替 (1: Yes, 0: No)"
+  },
+  {
+    "name": "transaction_id",
+    "type": "STRING",
+    "mode": "REQUIRED",
+    "description": "ID"
+  }
+]

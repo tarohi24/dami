@@ -1,0 +1,62 @@
+{
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
+    "python.analysis.extraPaths": [
+        "src",
+        ".venv/lib/python3.13/site-packages"
+    ],
+    "python.analysis.typeCheckingMode": "basic",
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.autoSearchPaths": true,
+    "python.analysis.diagnosticMode": "workspace",
+    "python.analysis.stubPath": ".venv/lib/python3.13/site-packages",
+    "python.analysis.useLibraryCodeForTypes": true,
+    "python.analysis.indexing": true,
+    "python.analysis.packageIndexDepths": [
+        {
+            "name": "dependency_injector",
+            "depth": 3
+        },
+        {
+            "name": "langchain",
+            "depth": 3
+        },
+        {
+            "name": "pydantic",
+            "depth": 2
+        },
+        {
+            "name": "langgraph",
+            "depth": 3
+        },
+        {
+            "name": "google-genai",
+            "depth": 3
+        }
+    ],
+    "python.languageServer": "Pylance",
+    "python.testing.pytestPath": ".venv/bin/pytest",
+    "python.envFile": "${workspaceFolder}/.env",
+    "python.analysis.include": [
+        "src/**",
+        "tests/**"
+    ],
+    "python.analysis.exclude": [
+        "**/__pycache__",
+        "**/.venv",
+        "**/node_modules"
+    ],
+    "terminal.integrated.env.osx": {
+        "PYTHONPATH": "${workspaceFolder}/src",
+    },
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/.DS_Store": true,
+        "**/Thumbs.db": true,
+        "**/__pycache__": true,
+        "**/*.pyc": true,
+        "**/.venv": true
+    }
+}
