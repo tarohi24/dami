@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Literal
 from dependency_injector.containers import DeclarativeContainer
 
@@ -9,13 +10,15 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from pydantic import model_validator
 
+from dami.ext.gcs import GCSHandler
+
 
 AppEnv = Literal["dev", "prod"]
 
 
 class AppSettings(BaseSettings):
     environemnt: AppEnv
-    service_account_path: str | None = None
+    service_account_path: str | Path | None = None
     model_config = SettingsConfigDict(env_prefix="APP_")
 
     @model_validator(mode="after")
@@ -34,4 +37,9 @@ class DIContainer(DeclarativeContainer):
     # clients
     storage_client = providers.Singleton(storage.Client)
     bq_client = providers.Singleton(bigquery.Client)
+    # ext
+    gcs_handler = providers.ThreadLocalSingleton(
+        GCSHandler,
+        client=storage_client,
+    )
     
