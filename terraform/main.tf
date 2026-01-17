@@ -20,7 +20,17 @@ provider "google" {
 }
 
 # create a service account
-resource "google_service_account" "dami_sa" {
+resource "google_service_account" "dami_testing" {
   account_id   = "${local.namespace}-testing-sa"
   display_name = "Dami Testing Service Account"
+}
+
+resource "google_service_account_key" "dami_testing" {
+  service_account_id = google_service_account.dami_testing.name
+  public_key_type    = "TYPE_X509_PEM_FILE"
+} 
+
+resource "local_file" "dami_testing_service_account_key" {
+  filename = "${path.module}/.secrets/testing-service-account-key.json"
+  content  = base64decode(google_service_account_key.dami_testing.private_key)
 }
