@@ -1,11 +1,14 @@
 import time
 
+from dami.container import DIContainer
+from dami.ext.bq import BQPolarsHandler
 from dami.ext.gcs import GCSHandler, GCSLocation, BlobNotFoundError, UnsupportedFileTypeError
 import pytest
 
 import polars as pl
 
 from dami.settings import GS_BUCKET
+from dami.types.bq import BQTable, BQField
 
 
 class TestGCSHandler:
@@ -88,3 +91,53 @@ class TestGCSHandler:
         handler.delete_blob(loc)
         with pytest.raises(BlobNotFoundError):
             handler.get_blob(loc)
+
+
+class TestBQPolarsHandler:
+    @pytest.fixture()
+    def bq_handler(self, container: DIContainer) -> BQPolarsHandler:
+        return container.bq_handler()
+
+    @pytest.fixture
+    def sample_table(self) -> BQTable:
+        return BQTable(
+            project="test-project",
+            dataset="test_dataset",
+            table="test_table",
+            fields=[
+                BQField(name="id", type="INTEGER", mode="NULLABLE"),
+                BQField(name="name", type="STRING", mode="NULLABLE"),
+                BQField(name="value", type="FLOAT", mode="NULLABLE"),
+            ],
+        )
+
+    def test_validate_df_valid(self, bq_handler: BQPolarsHandler, sample_table: BQTable):
+        df = pl.DataFrame({
+            "id": [1, 2],
+            "name": ["a", "b"],
+            "value": [1.1, 2.2],
+        })
+        # astype to match BQPolarsHandler's expectations
+        df = df.with_columns(
+            pl.col("id").cast(pl.Int64),
+            pl.col("value").cast(pl.Float64),
+        )
+        bq_handler.validate_df(df, sample_table)
+
+    def test_validate_df_missing_column(self, bq_handler: BQPolarsHandler, sample_table: BQTable):
+        df = pl.DataFrame({
+            "id": [1, 2],
+            "value": [1.1, 2.2],
+        })
+        with pytest.raises(ValueError, match="Missing column: name"):
+            bq_handler.validate_df(df, sample_table)
+
+    def test_validate_df_incorrect_dtype(self, bq_handler: BQPolarsHandler, sample_table: BQTable):
+        df = pl.DataFrame({
+            "id": ["1", "2"],
+            "name": ["a", "b"],
+            "value": [1.1, 2.2],
+        })
+        with pytest.raises(TypeError, match="Column id has incorrect dtype"):
+            bq_handler.validate_df(df, sample_table)
+    

@@ -9,7 +9,7 @@ from google.cloud import bigquery
 
 
 @pytest.fixture
-def container():
+def container() -> DIContainer:
     app_settings = AppSettings(
         environemnt="dev",
         service_account_path=(

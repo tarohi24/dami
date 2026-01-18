@@ -10,6 +10,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from pydantic import model_validator
 
+from dami.ext.bq import BQPolarsHandler
 from dami.ext.gcs import GCSHandler
 
 
@@ -41,5 +42,9 @@ class DIContainer(DeclarativeContainer):
     gcs_handler = providers.ThreadLocalSingleton(
         GCSHandler,
         client=storage_client,
+    )
+    bq_handler = providers.ThreadLocalSingleton(
+        BQPolarsHandler,
+        client=bq_client,
     )
     
