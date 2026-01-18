@@ -13,7 +13,7 @@ def container():
     app_settings = AppSettings(
         environemnt="dev",
         service_account_path=(
-            PROJECT_ROOT / "terraform/.secrets/testing-service-account-key.json"
+            PROJECT_ROOT / "terraform/.secrets/runner-service-account-key.json"
         ),
     )
     container = DIContainer()

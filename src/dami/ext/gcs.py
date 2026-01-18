@@ -24,7 +24,12 @@ EXTENSION_TO_LOADER: dict[str, Callable[[bytes], pl.DataFrame]] = {
     "parquet": lambda data: pl.read_parquet(data),
 }
 
+
 class UnsupportedFileTypeError(Exception):
+    pass
+
+
+class BlobNotFoundError(Exception):
     pass
 
 
@@ -43,9 +48,11 @@ class GCSHandler:
         bucket_name, blob_name = path.split("/", 1)
         return GCSLocation(bucket=bucket_name, path=blob_name)
 
-    def get_blob(self, loc: GCSLocation) -> Blob | None:
+    def get_blob(self, loc: GCSLocation) -> Blob:
         bucket = self.client.get_bucket(loc.bucket)
         blob = bucket.get_blob(loc.path)
+        if blob is None:
+            raise BlobNotFoundError(f"Blob not found: {loc.get_uri()}")
         return blob
     
     def get_latest_blob(self, prefix: GCSPath, suffix: str) -> Blob | None:
@@ -70,3 +77,13 @@ class GCSHandler:
         data = blob.download_as_bytes() 
         data = loader(data)
         return data
+    
+    def upload_bytes(self, data: bytes, loc: GCSLocation) -> None:
+        bucket = self.client.get_bucket(loc.bucket)
+        blob = bucket.blob(loc.path)
+        blob.upload_from_string(data)  # you can pass bytes directly
+
+    def delete_blob(self, loc: GCSLocation) -> None:
+        bucket = self.client.get_bucket(loc.bucket)
+        blob = bucket.blob(loc.path)
+        blob.delete()

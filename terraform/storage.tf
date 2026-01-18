@@ -4,6 +4,3 @@ resource "google_storage_bucket" "this" {
   location = "US"
   public_access_prevention = "enforced"
 }
-
-
-
