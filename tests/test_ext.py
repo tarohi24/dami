@@ -1,4 +1,6 @@
-from dami.ext.gcs import GCSHandler, GCSLocation
+import time
+
+from dami.ext.gcs import GCSHandler, GCSLocation, BlobNotFoundError, UnsupportedFileTypeError
 import pytest
 
 import polars as pl
@@ -10,7 +12,7 @@ class TestGCSHandler:
     @pytest.fixture()
     def handler(self, container) -> GCSHandler:
         return container.gcs_handler()
-    
+
     def test_upload_and_download(self, handler: GCSHandler):
         df = pl.DataFrame({
             "col1": [1, 2, 3],
@@ -25,3 +27,64 @@ class TestGCSHandler:
         # download
         fetched_df = handler.download_df(blob=handler.get_blob(loc))
         assert df.equals(fetched_df)
+        # cleanup
+        handler.delete_blob(loc)
+
+    def test_get_blob_not_found(self, handler: GCSHandler):
+        loc = GCSLocation(
+            bucket=GS_BUCKET,
+            path="test/non_existent_blob.csv",
+        )
+        with pytest.raises(BlobNotFoundError):
+            handler.get_blob(loc)
+
+    def test_get_latest_blob_no_blobs(self, handler: GCSHandler):
+        loc = GCSLocation(
+            bucket=GS_BUCKET,
+            path="test/no_blobs_prefix/",
+        )
+        result = handler.get_latest_blob(loc, suffix=".csv")
+        assert result is None
+
+    def test_get_latest_blob(self, handler: GCSHandler):
+        prefix = "test/test_get_latest_blob/"
+        loc1 = GCSLocation(
+            bucket=GS_BUCKET,
+            path=f"{prefix}file1.csv",
+        )
+        loc2 = GCSLocation(
+            bucket=GS_BUCKET,
+            path=f"{prefix}file2.csv",
+        )
+        handler.upload_bytes(b"data1", loc1)
+        time.sleep(1)
+        handler.upload_bytes(b"data2", loc2)
+
+        latest_blob = handler.get_latest_blob(GCSLocation(bucket=GS_BUCKET, path=prefix), suffix=".csv")
+        assert latest_blob is not None
+        assert latest_blob.name == loc2.path
+
+        handler.delete_blob(loc1)
+        handler.delete_blob(loc2)
+
+    def test_download_unsupported_file_type(self, handler: GCSHandler):
+        loc = GCSLocation(
+            bucket=GS_BUCKET,
+            path="test/unsupported.txt",
+        )
+        handler.upload_bytes(b"some data", loc)
+        blob = handler.get_blob(loc)
+        with pytest.raises(UnsupportedFileTypeError):
+            handler.download_df(blob)
+        handler.delete_blob(loc)
+
+    def test_delete_blob(self, handler: GCSHandler):
+        loc = GCSLocation(
+            bucket=GS_BUCKET,
+            path="test/to_be_deleted.csv",
+        )
+        handler.upload_bytes(b"some data", loc)
+        handler.get_blob(loc)  # should not raise
+        handler.delete_blob(loc)
+        with pytest.raises(BlobNotFoundError):
+            handler.get_blob(loc)

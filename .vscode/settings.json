@@ -57,6 +57,7 @@
         "**/Thumbs.db": true,
         "**/__pycache__": true,
         "**/*.pyc": true,
-        "**/.venv": true
+        "**/.venv": true,
+        "**/.pytest_cache": true
     }
 }
