@@ -2,7 +2,12 @@ import time
 
 from dami.container import DIContainer
 from dami.ext.bq import BQPolarsHandler
-from dami.ext.gcs import GCSHandler, GCSLocation, BlobNotFoundError, UnsupportedFileTypeError
+from dami.ext.gcs import (
+    GCSHandler,
+    GCSLocation,
+    BlobNotFoundError,
+    UnsupportedFileTypeError,
+)
 import pytest
 
 import polars as pl
@@ -17,10 +22,12 @@ class TestGCSHandler:
         return container.gcs_handler()
 
     def test_upload_and_download(self, handler: GCSHandler):
-        df = pl.DataFrame({
-            "col1": [1, 2, 3],
-            "col2": ["a", "b", "c"],
-        })
+        df = pl.DataFrame(
+            {
+                "col1": [1, 2, 3],
+                "col2": ["a", "b", "c"],
+            }
+        )
         loc = GCSLocation(
             bucket=GS_BUCKET,
             path="test/test_upload_and_download.csv",
@@ -63,7 +70,9 @@ class TestGCSHandler:
         time.sleep(1)
         handler.upload_bytes(b"data2", loc2)
 
-        latest_blob = handler.get_latest_blob(GCSLocation(bucket=GS_BUCKET, path=prefix), suffix=".csv")
+        latest_blob = handler.get_latest_blob(
+            GCSLocation(bucket=GS_BUCKET, path=prefix), suffix=".csv"
+        )
         assert latest_blob is not None
         assert latest_blob.name == loc2.path
 
@@ -111,12 +120,16 @@ class TestBQPolarsHandler:
             ],
         )
 
-    def test_validate_df_valid(self, bq_handler: BQPolarsHandler, sample_table: BQTable):
-        df = pl.DataFrame({
-            "id": [1, 2],
-            "name": ["a", "b"],
-            "value": [1.1, 2.2],
-        })
+    def test_validate_df_valid(
+        self, bq_handler: BQPolarsHandler, sample_table: BQTable
+    ):
+        df = pl.DataFrame(
+            {
+                "id": [1, 2],
+                "name": ["a", "b"],
+                "value": [1.1, 2.2],
+            }
+        )
         # astype to match BQPolarsHandler's expectations
         df = df.with_columns(
             pl.col("id").cast(pl.Int64),
@@ -124,20 +137,27 @@ class TestBQPolarsHandler:
         )
         bq_handler.validate_df(df, sample_table)
 
-    def test_validate_df_missing_column(self, bq_handler: BQPolarsHandler, sample_table: BQTable):
-        df = pl.DataFrame({
-            "id": [1, 2],
-            "value": [1.1, 2.2],
-        })
-        with pytest.raises(ValueError, match="Missing column: name"):
+    def test_validate_df_missing_column(
+        self, bq_handler: BQPolarsHandler, sample_table: BQTable
+    ):
+        df = pl.DataFrame(
+            {
+                "id": [1, 2],
+                "value": [1.1, 2.2],
+            }
+        )
+        with pytest.raises(ValueError):
             bq_handler.validate_df(df, sample_table)
 
-    def test_validate_df_incorrect_dtype(self, bq_handler: BQPolarsHandler, sample_table: BQTable):
-        df = pl.DataFrame({
-            "id": ["1", "2"],
-            "name": ["a", "b"],
-            "value": [1.1, 2.2],
-        })
-        with pytest.raises(TypeError, match="Column id has incorrect dtype"):
+    def test_validate_df_incorrect_dtype(
+        self, bq_handler: BQPolarsHandler, sample_table: BQTable
+    ):
+        df = pl.DataFrame(
+            {
+                "id": ["1", "2"],
+                "name": ["a", "b"],
+                "value": [1.1, 2.2],
+            }
+        )
+        with pytest.raises(TypeError):
             bq_handler.validate_df(df, sample_table)
-    

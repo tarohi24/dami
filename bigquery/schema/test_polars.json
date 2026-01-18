@@ -1,0 +1,54 @@
+[
+  {
+    "name": "string_field",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "integer_field",
+    "type": "INTEGER",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "float_field",
+    "type": "FLOAT",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "boolean_field",
+    "type": "BOOLEAN",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "timestamp_field",
+    "type": "TIMESTAMP",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "date_field",
+    "type": "DATE",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "time_field",
+    "type": "TIME",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "struct_field",
+    "type": "RECORD",
+    "mode": "NULLABLE",
+    "fields": [
+      {
+        "name": "nested_string",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "nested_integer",
+        "type": "INTEGER",
+        "mode": "NULLABLE"
+      }
+    ]
+  }
+]

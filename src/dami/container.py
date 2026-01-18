@@ -26,12 +26,13 @@ class AppSettings(BaseSettings):
     def check_mode_consistency(self):
         if self.environemnt == "prod":
             if self.service_account_path is not None:
-                raise ValueError("Production mode is expected to run on Cloud Run, which uses default service account.")
+                raise ValueError(
+                    "Production mode is expected to run on Cloud Run, which uses default service account."
+                )
         else:
             if self.service_account_path is None:
-                raise ValueError("Development mode requires a service account path.")    
+                raise ValueError("Development mode requires a service account path.")
         return self
-
 
 
 class DIContainer(DeclarativeContainer):
@@ -47,4 +48,3 @@ class DIContainer(DeclarativeContainer):
         BQPolarsHandler,
         client=bq_client,
     )
-    
