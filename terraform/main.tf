@@ -34,3 +34,9 @@ resource "local_file" "runner_service_account_key" {
   filename = "${path.module}/.secrets/runner-service-account-key.json"
   content  = base64decode(google_service_account_key.runner.private_key)
 }
+
+resource "google_project_iam_member" "runner_viewer" {
+  project = local.project_id
+  role    = "roles/viewer"
+  member  = "serviceAccount:${google_service_account.runner.email}"
+}
