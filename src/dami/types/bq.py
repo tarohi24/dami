@@ -1,5 +1,8 @@
-from typing import Literal, Self
+import datetime
+from typing import Literal, LiteralString, Self
 from pydantic import BaseModel, model_validator
+
+import polars as pl
 
 # datetime is not allowed in BQ schema types
 BQDataType = Literal[
@@ -8,10 +11,34 @@ BQDataType = Literal[
     "FLOAT",
     "BOOLEAN",
     "TIMESTAMP",
-    "DATE",
-    "TIME",
     "RECORD",
+    # the following types have not been supported in this project yet,
+    # while BQ supports them.
+    # "DATE",
+    # "TIME",
 ]
+
+
+PolarsTypeForBQ = (
+    pl.String
+    | pl.Int64
+    | pl.Float64
+    | pl.Boolean
+    | pl.Datetime
+    | pl.Struct
+)
+
+PythonTypeForBQ = (
+    str
+    | int
+    | float
+    | bool
+    | datetime.datetime
+)
+
+
+BQQuery = LiteralString
+
 
 
 class BQField(BaseModel):
@@ -41,3 +68,4 @@ class BQTable(BaseModel):
     dataset: str
     table: str
     fields: list[BQField]
+

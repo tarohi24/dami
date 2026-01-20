@@ -1,23 +1,38 @@
+from collections.abc import Mapping
 from dataclasses import dataclass
+import datetime
 import io
-from typing import cast
+from typing import LiteralString, cast
 
 from google.cloud import bigquery as bq
 import polars as pl
 
-from dami.types.bq import BQDataType, BQField, BQTable
+from dami.types.bq import (
+    BQDataType,
+    BQField,
+    BQQuery,
+    PolarsTypeForBQ,
+    PythonTypeForBQ,
+    BQTable,
+)
 
 from loguru import logger
 
 
-BQ_TYPE_TO_POLARS_DTYPE: dict[BQDataType, type[pl.DataType]] = {
+BQ_TYPE_TO_POLARS_DTYPE: dict[BQDataType, type[PolarsTypeForBQ]] = {
     "STRING": pl.String,
     "INTEGER": pl.Int64,
     "FLOAT": pl.Float64,
     "BOOLEAN": pl.Boolean,
     "TIMESTAMP": pl.Datetime,
-    "DATE": pl.Date,
-    "TIME": pl.Time,
+}
+
+PYTHON_TYPE_TO_BQ_TYPE: dict[type[PythonTypeForBQ], BQDataType] = {
+    str: "STRING",
+    int: "INTEGER",
+    float: "FLOAT",
+    bool: "BOOLEAN",
+    datetime.datetime: "TIMESTAMP",
 }
 
 
@@ -38,8 +53,7 @@ def _validate_field(bq_field: BQField, polars_dtype: pl.DataType) -> None:
             )
         assert bq_field.fields is not None  # for type checker
         polars_field_dtype: dict[str, pl.DataType] = {
-            field.name: cast(pl.DataType, field.dtype)
-            for field in polars_dtype.fields
+            field.name: cast(pl.DataType, field.dtype) for field in polars_dtype.fields
         }
         for sub_field in bq_field.fields:
             _validate_field(
@@ -89,3 +103,12 @@ class BQPolarsHandler:
 
     def fetch_df(self, query: str) -> pl.DataFrame:
         raise NotImplementedError()
+
+    def run_update_query(
+        self,
+        query: BQQuery,
+        params: dict[str, PythonTypeForBQ],
+    ) -> None:
+        job = self.client.query(query)
+        res = job.result()  # Waits for the job to complete
+        return res
