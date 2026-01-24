@@ -6,3 +6,8 @@ format:
 .PHONY: type
 type:
 	uv run ty check src tests
+
+
+.PHONY: build
+build:
+	docker compose build
