@@ -3,6 +3,7 @@ from dataclasses import dataclass
 import datetime
 import io
 from typing import LiteralString, cast
+from xmlrpc import client
 
 from google.cloud import bigquery as bq
 import polars as pl
@@ -35,6 +36,8 @@ PYTHON_TYPE_TO_BQ_TYPE: dict[type[PythonTypeForBQ], BQDataType] = {
     datetime.datetime: "TIMESTAMP",
 }
 
+BQQueryParameter = bq.ArrayQueryParameter | bq.ScalarQueryParameter | bq.StructQueryParameter
+
 
 def _validate_field(bq_field: BQField, polars_dtype: pl.DataType) -> None:
     if bq_field.type != "RECORD":
@@ -61,6 +64,37 @@ def _validate_field(bq_field: BQField, polars_dtype: pl.DataType) -> None:
                 polars_dtype=polars_field_dtype[sub_field.name],
             )
 
+
+def _create_query_job_config_from_python(
+    params: dict[str, PythonTypeForBQ],
+) -> bq.QueryJobConfig:
+    query_params: list[BQQueryParameter] = []
+    for name, value in params.items():
+        if isinstance(value, list):
+            if len(value) == 0:
+                raise ValueError(f"Cannot create array query parameter {name} from empty list")
+            element_type = PYTHON_TYPE_TO_BQ_TYPE[type(value[0])]
+            query_param = bq.ArrayQueryParameter(
+                name=name,
+                array_type=element_type,
+                values=value,
+            )
+            query_params.append(query_param)
+        elif isinstance(value, Mapping):
+            raise NotImplementedError("Struct query parameters are not implemented yet")
+        else:
+            param_type = PYTHON_TYPE_TO_BQ_TYPE[type(value)]
+            query_param = bq.ScalarQueryParameter(
+                name=name,
+                type_=param_type,
+                value=value,
+            )
+            query_params.append(query_param)
+    job_config = bq.QueryJobConfig(
+        query_parameters=query_params,
+    )
+    return job_config
+    
 
 @dataclass
 class BQPolarsHandler:
@@ -109,6 +143,8 @@ class BQPolarsHandler:
         query: BQQuery,
         params: dict[str, PythonTypeForBQ],
     ) -> None:
-        job = self.client.query(query)
-        res = job.result()  # Waits for the job to complete
-        return res
+        job_config = _create_query_job_config_from_python(params)
+        job = self.client.query(query, job_config=job_config)
+        job.result()  # Waits for the job to complete
+        logger.info("completed update query")
+
