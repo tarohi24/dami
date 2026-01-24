@@ -36,7 +36,9 @@ PYTHON_TYPE_TO_BQ_TYPE: dict[type[PythonTypeForBQ], BQDataType] = {
     datetime.datetime: "TIMESTAMP",
 }
 
-BQQueryParameter = bq.ArrayQueryParameter | bq.ScalarQueryParameter | bq.StructQueryParameter
+BQQueryParameter = (
+    bq.ArrayQueryParameter | bq.ScalarQueryParameter | bq.StructQueryParameter
+)
 
 
 def _validate_field(bq_field: BQField, polars_dtype: pl.DataType) -> None:
@@ -72,7 +74,9 @@ def _create_query_job_config_from_python(
     for name, value in params.items():
         if isinstance(value, list):
             if len(value) == 0:
-                raise ValueError(f"Cannot create array query parameter {name} from empty list")
+                raise ValueError(
+                    f"Cannot create array query parameter {name} from empty list"
+                )
             element_type = PYTHON_TYPE_TO_BQ_TYPE[type(value[0])]
             query_param = bq.ArrayQueryParameter(
                 name=name,
@@ -90,11 +94,9 @@ def _create_query_job_config_from_python(
                 value=value,
             )
             query_params.append(query_param)
-    job_config = bq.QueryJobConfig(
-        query_parameters=query_params,
-    )
+    job_config = bq.QueryJobConfig(query_parameters=query_params)
     return job_config
-    
+
 
 @dataclass
 class BQPolarsHandler:
@@ -135,8 +137,14 @@ class BQPolarsHandler:
         res = job.result()  # Waits for the job to complete
         logger.info(res)
 
-    def fetch_df(self, query: str) -> pl.DataFrame:
-        raise NotImplementedError()
+    def fetch_df(self, query: str, params: dict[str, PythonTypeForBQ]) -> pl.DataFrame:
+        job_config = _create_query_job_config_from_python(params)
+        job = self.client.query(query, job_config=job_config)
+        res = job.to_arrow()
+        df = cast(pl.DataFrame, pl.from_arrow(res))
+        assert isinstance(df, pl.DataFrame)
+        logger.info(f"Fetched {df.height} rows from BQ")
+        return df
 
     def run_update_query(
         self,
@@ -147,4 +155,3 @@ class BQPolarsHandler:
         job = self.client.query(query, job_config=job_config)
         job.result()  # Waits for the job to complete
         logger.info("completed update query")
-

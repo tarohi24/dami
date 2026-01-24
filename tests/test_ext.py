@@ -110,9 +110,9 @@ class TestBQPolarsHandler:
     @pytest.fixture
     def sample_table(self) -> BQTable:
         return BQTable(
-            project="test-project",
-            dataset="test_dataset",
-            table="test_table",
+            project="strange-oxide-138404",
+            dataset="testing",
+            table="for_data_test",
             fields=[
                 BQField(name="id", type="INTEGER", mode="NULLABLE"),
                 BQField(name="name", type="STRING", mode="NULLABLE"),
@@ -161,3 +161,45 @@ class TestBQPolarsHandler:
         )
         with pytest.raises(TypeError):
             bq_handler.validate_df(df, sample_table)
+
+
+    def test_update_query(self, bq_handler: BQPolarsHandler, sample_table: BQTable):
+        # tear down
+        bq_handler.run_update_query(
+            f"DELETE FROM `{sample_table.project}.{sample_table.dataset}.{sample_table.table}` WHERE TRUE",
+            params={},
+        )
+        # (1) insert df
+        df = pl.DataFrame(
+            {
+                "id": [1, 2],
+                "name": ["original_a", "original_b"],
+                "value": [1.1, 2.2],
+            }
+        )
+        df = df.with_columns(
+            pl.col("id").cast(pl.Int64),
+            pl.col("value").cast(pl.Float64),
+        )
+        bq_handler.insert_df(df, sample_table)
+        
+        # (2) update
+        update_query = f"UPDATE `{sample_table.project}.{sample_table.dataset}.{sample_table.table}` SET name = @name WHERE id = @id"
+        update_params = {
+            "id": 1,
+            "name": "updated",
+        }
+        bq_handler.run_update_query(update_query, update_params)
+        
+        # (3) fetch
+        fetch_query = f"SELECT * FROM `{sample_table.project}.{sample_table.dataset}.{sample_table.table}` WHERE id = @id"
+        fetch_params = {"id": 1}
+        fetched_df = bq_handler.fetch_df(fetch_query, fetch_params)
+        
+        # (4) check if the update properly takes place
+        assert fetched_df.height == 1
+        assert fetched_df["name"][0] == "updated"
+        assert fetched_df["id"][0] == 1
+        assert fetched_df["value"][0] == 1.1
+        
+

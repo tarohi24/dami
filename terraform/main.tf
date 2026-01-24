@@ -35,8 +35,16 @@ resource "local_file" "runner_service_account_key" {
   content  = base64decode(google_service_account_key.runner.private_key)
 }
 
-resource "google_project_iam_member" "runner_viewer" {
+resource "google_project_iam_member" "runner_roles" {
+  for_each = toset(
+    [
+      "roles/viewer",
+      "roles/bigquery.dataEditor",
+      "roles/bigquery.jobUser",
+      "roles/storage.objectAdmin",
+    ]
+  )
   project = local.project_id
-  role    = "roles/viewer"
+  role    = each.key
   member  = "serviceAccount:${google_service_account.runner.email}"
 }
