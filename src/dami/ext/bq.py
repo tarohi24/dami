@@ -2,8 +2,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 import datetime
 import io
-from typing import LiteralString, cast
-from xmlrpc import client
+from typing import cast
 
 from google.cloud import bigquery as bq
 import polars as pl
@@ -26,6 +25,7 @@ BQ_TYPE_TO_POLARS_DTYPE: dict[BQDataType, type[PolarsTypeForBQ]] = {
     "FLOAT": pl.Float64,
     "BOOLEAN": pl.Boolean,
     "TIMESTAMP": pl.Datetime,
+    "DATE": pl.Date,
 }
 
 PYTHON_TYPE_TO_BQ_TYPE: dict[type[PythonTypeForBQ], BQDataType] = {
@@ -34,6 +34,7 @@ PYTHON_TYPE_TO_BQ_TYPE: dict[type[PythonTypeForBQ], BQDataType] = {
     float: "FLOAT",
     bool: "BOOLEAN",
     datetime.datetime: "TIMESTAMP",
+    datetime.date: "DATE",
 }
 
 BQQueryParameter = (
@@ -98,6 +99,21 @@ def _create_query_job_config_from_python(
     return job_config
 
 
+def _generate_polars_schema(
+    fields: list[BQField],
+) -> dict[str, type[PolarsTypeForBQ] | pl.Struct]:
+    schema: dict[str, type[PolarsTypeForBQ] | pl.Struct] = {}
+    for field in fields:
+        if field.type != "RECORD":
+            polars_dtype = BQ_TYPE_TO_POLARS_DTYPE[field.type]
+            schema[field.name] = polars_dtype
+        else:
+            assert field.fields is not None  # for type checker
+            sub_schema = _generate_polars_schema(field.fields)
+            schema[field.name] = pl.Struct(sub_schema)
+    return schema
+
+
 @dataclass
 class BQPolarsHandler:
     client: bq.Client
@@ -132,16 +148,29 @@ class BQPolarsHandler:
                 job_config=bq.LoadJobConfig(
                     source_format=bq.SourceFormat.PARQUET,
                     parquet_options=parquet_options,
+                    schema=table.bq_schema,
                 ),
             )
         res = job.result()  # Waits for the job to complete
         logger.info(res)
 
-    def fetch_df(self, query: str, params: dict[str, PythonTypeForBQ]) -> pl.DataFrame:
+    def fetch_df(
+        self,
+        query: BQQuery,
+        table: BQTable,
+        fields_to_fetch: list[str],
+        params: dict[str, PythonTypeForBQ],
+    ) -> pl.DataFrame:
         job_config = _create_query_job_config_from_python(params)
+        field_mapping = {
+            field.name: field for field in table.fields if field.name in fields_to_fetch
+        }
+        schema = _generate_polars_schema(
+            [field_mapping[field] for field in fields_to_fetch]
+        )
         job = self.client.query(query, job_config=job_config)
         res = job.to_arrow()
-        df = cast(pl.DataFrame, pl.from_arrow(res))
+        df = cast(pl.DataFrame, pl.from_arrow(res, schema=schema))
         assert isinstance(df, pl.DataFrame)
         logger.info(f"Fetched {df.height} rows from BQ")
         return df

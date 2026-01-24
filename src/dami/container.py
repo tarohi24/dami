@@ -11,7 +11,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import model_validator
 
 from dami.ext.bq import BQPolarsHandler
-from dami.ext.gcs import GCSHandler
+from dami.ext.gcs import GCSHandler, GCSLocation
+from dami.services.moneyforward import MoneyForwardService
 
 
 AppEnv = Literal["dev", "prod"]
@@ -36,6 +37,8 @@ class AppSettings(BaseSettings):
 
 
 class DIContainer(DeclarativeContainer):
+    # settings
+    mf_gcs_location = providers.Factory(GCSLocation)
     # clients
     storage_client = providers.Singleton(storage.Client)
     bq_client = providers.Singleton(bigquery.Client)
@@ -47,4 +50,11 @@ class DIContainer(DeclarativeContainer):
     bq_handler = providers.ThreadLocalSingleton(
         BQPolarsHandler,
         client=bq_client,
+    )
+    # services
+    mf_service = providers.ThreadLocalSingleton(
+        MoneyForwardService,
+        bq_handler=bq_handler,
+        gcs_handler=gcs_handler,
+        gcs_dir=mf_gcs_location,
     )

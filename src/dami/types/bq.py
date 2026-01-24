@@ -1,6 +1,7 @@
 import datetime
-from typing import Literal, LiteralString, Self
-from pydantic import BaseModel, model_validator
+import re
+from typing import Literal, Self
+from pydantic import BaseModel, field_validator, model_validator
 
 import polars as pl
 
@@ -12,33 +13,21 @@ BQDataType = Literal[
     "BOOLEAN",
     "TIMESTAMP",
     "RECORD",
+    "DATE",
     # the following types have not been supported in this project yet,
     # while BQ supports them.
-    # "DATE",
     # "TIME",
 ]
 
 
 PolarsTypeForBQ = (
-    pl.String
-    | pl.Int64
-    | pl.Float64
-    | pl.Boolean
-    | pl.Datetime
-    | pl.Struct
+    pl.String | pl.Int64 | pl.Float64 | pl.Boolean | pl.Datetime | pl.Struct | pl.Date
 )
 
-PythonTypeForBQ = (
-    str
-    | int
-    | float
-    | bool
-    | datetime.datetime
-)
+PythonTypeForBQ = str | int | float | bool | datetime.datetime | datetime.date
 
 
-BQQuery = LiteralString
-
+BQQuery = str
 
 
 class BQField(BaseModel):
@@ -69,3 +58,18 @@ class BQTable(BaseModel):
     table: str
     fields: list[BQField]
 
+    @field_validator("table")
+    def validate_table_name(cls, v: str) -> str:
+        # table name must follow
+        if not re.match(r"[a-z0-9-_]+", v):
+            raise ValueError(
+                f"Table name '{v}' is invalid. It must follow the pattern 'project.dataset.table' with allowed characters."
+            )
+        return v
+
+    def get_bq_table_id(self) -> str:
+        return f"`{self.project}.{self.dataset}.{self.table}`"
+
+    @property
+    def bq_schema(self) -> list[dict]:
+        return [field.model_dump() for field in self.fields]

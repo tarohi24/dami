@@ -162,7 +162,6 @@ class TestBQPolarsHandler:
         with pytest.raises(TypeError):
             bq_handler.validate_df(df, sample_table)
 
-
     def test_update_query(self, bq_handler: BQPolarsHandler, sample_table: BQTable):
         # tear down
         bq_handler.run_update_query(
@@ -182,7 +181,7 @@ class TestBQPolarsHandler:
             pl.col("value").cast(pl.Float64),
         )
         bq_handler.insert_df(df, sample_table)
-        
+
         # (2) update
         update_query = f"UPDATE `{sample_table.project}.{sample_table.dataset}.{sample_table.table}` SET name = @name WHERE id = @id"
         update_params = {
@@ -190,16 +189,14 @@ class TestBQPolarsHandler:
             "name": "updated",
         }
         bq_handler.run_update_query(update_query, update_params)
-        
+
         # (3) fetch
         fetch_query = f"SELECT * FROM `{sample_table.project}.{sample_table.dataset}.{sample_table.table}` WHERE id = @id"
         fetch_params = {"id": 1}
         fetched_df = bq_handler.fetch_df(fetch_query, fetch_params)
-        
+
         # (4) check if the update properly takes place
         assert fetched_df.height == 1
         assert fetched_df["name"][0] == "updated"
         assert fetched_df["id"][0] == 1
         assert fetched_df["value"][0] == 1.1
-        
-

@@ -18,9 +18,9 @@ class GCSLocation:
 GCSPath = str | GCSLocation
 
 
-EXTENSION_TO_LOADER: dict[str, Callable[[bytes], pl.DataFrame]] = {
-    "csv": lambda data: pl.read_csv(data),
-    "parquet": lambda data: pl.read_parquet(data),
+BYTES_TO_LOADER: dict[str, Callable[[bytes, str | None], pl.DataFrame]] = {
+    "parquet": lambda data, _: pl.read_parquet(data),
+    "csv": lambda data, encoding: pl.read_csv(data, encoding=encoding or "utf-8"),
 }
 
 
@@ -69,16 +69,23 @@ class GCSHandler:
         latest_blob = max(blobs, key=lambda b: b.updated)
         return latest_blob
 
-    def download_df(self, blob: Blob) -> pl.DataFrame:
+    def download_df(self, blob: Blob, str_encoding: str | None) -> pl.DataFrame:
+        """
+        Specify `str_encoding` when you use STR_TO_LOADER.
+        """
         assert blob.name is not None
         extension = blob.name.split(".")[-1]
-        try:
-            loader = EXTENSION_TO_LOADER[extension]
-        except KeyError:
-            raise UnsupportedFileTypeError(f"Unsupported file type: {extension}")
         data = blob.download_as_bytes()
-        data = loader(data)
-        return data
+        # Note that passing encoding to `pl.read_XXX`
+        # and passing decoded string are different.
+        # the latter may cause issues with some file types.
+        try:
+            loader = BYTES_TO_LOADER[extension]
+        except KeyError:
+            raise UnsupportedFileTypeError(
+                f"Unsupported file type for BYTES_TO_LOADER: {extension}"
+            )
+        return loader(data, str_encoding)
 
     def upload_bytes(self, data: bytes, loc: GCSLocation) -> None:
         bucket = self.client.get_bucket(loc.bucket)
