@@ -1,3 +1,6 @@
+# 1. Import all rules from .gitignore
+#!include:.gitignore
+
 .git
 .vscode
 .ruff_cache

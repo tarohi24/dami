@@ -2,18 +2,20 @@ steps:
   # Step 0: Pull the latest image to use as cache (if it exists)
   - name: 'gcr.io/cloud-builders/docker'
     entrypoint: 'bash'
-    args: ['-c', 'docker pull ${LOCATION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/${IMAGE}:latest || exit 0']
+    args: ['-c', 'docker pull ${_LOCATION}-docker.pkg.dev/${_PROJECT_ID}/${_REPOSITORY}/${_IMAGE}:latest || exit 0']
   - name: 'gcr.io/cloud-builders/docker'
+    env:
+      - 'DOCKER_BUILDKIT=1'
     args: [
       'build',
-      '-t', '${LOCATION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/${IMAGE}:latest',
-      '--cache-from', '${LOCATION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/${IMAGE}:latest',
+      '-t', '${_LOCATION}-docker.pkg.dev/${_PROJECT_ID}/${_REPOSITORY}/${_IMAGE}:latest',
+      '--cache-from', '${_LOCATION}-docker.pkg.dev/${_PROJECT_ID}/${_REPOSITORY}/${_IMAGE}:latest',
       '-f', 'app.dockerfile',
       '.'
     ]
-images: ['${LOCATION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/${IMAGE}:latest']
-options:
-  env:
-    - "PROJECT_ID=strange-oxide-138404"
-    - "LOCATION=us-central"
-    - "REPOSITORY=whiro-dami-registry"
+images: ['${_LOCATION}-docker.pkg.dev/${_PROJECT_ID}/${_REPOSITORY}/${_IMAGE}:latest']
+substitutions:
+  _PROJECT_ID: strange-oxide-138404
+  _LOCATION: us-central
+  _REPOSITORY: whiro-dami-registry
+  _IMAGE: dami-app
