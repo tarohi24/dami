@@ -16,6 +16,6 @@ steps:
 images: ['${_LOCATION}-docker.pkg.dev/${_PROJECT_ID}/${_REPOSITORY}/${_IMAGE}:latest']
 substitutions:
   _PROJECT_ID: strange-oxide-138404
-  _LOCATION: us-central
+  _LOCATION: us-central1
   _REPOSITORY: whiro-dami-registry
   _IMAGE: dami-app
