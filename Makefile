@@ -11,3 +11,8 @@ type:
 .PHONY: build
 build:
 	docker compose build
+
+
+.PHONY: cloudbuild
+cloudbuild:
+	gcloud builds submit --config cloudbuild.yaml .

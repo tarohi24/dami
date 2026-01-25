@@ -1,0 +1,5 @@
+.git
+.vscode
+.ruff_cache
+terraform
+tests

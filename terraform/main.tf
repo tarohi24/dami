@@ -42,6 +42,7 @@ resource "google_project_iam_member" "runner_roles" {
       "roles/bigquery.dataEditor",
       "roles/bigquery.jobUser",
       "roles/storage.objectAdmin",
+      "roles/cloudbuild.builds.editor",
     ]
   )
   project = local.project_id

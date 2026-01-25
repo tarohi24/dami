@@ -1,0 +1,19 @@
+steps:
+  # Step 0: Pull the latest image to use as cache (if it exists)
+  - name: 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
+    args: ['-c', 'docker pull ${LOCATION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/${IMAGE}:latest || exit 0']
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build',
+      '-t', '${LOCATION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/${IMAGE}:latest',
+      '--cache-from', '${LOCATION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/${IMAGE}:latest',
+      '-f', 'app.dockerfile',
+      '.'
+    ]
+images: ['${LOCATION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/${IMAGE}:latest']
+options:
+  env:
+    - "PROJECT_ID=strange-oxide-138404"
+    - "LOCATION=us-central"
+    - "REPOSITORY=whiro-dami-registry"
