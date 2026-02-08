@@ -34,14 +34,30 @@ class AppSettings(BaseSettings):
             if self.service_account_path is None:
                 raise ValueError("Development mode requires a service account path.")
         return self
+    
+
+def inject_storage_client(settings: AppSettings) -> storage.Client:
+    assert settings.service_account_path is not None
+    return storage.Client.from_service_account_json(
+        str(settings.service_account_path)
+    )
+
+
+def inject_bq_client(settings: AppSettings) -> bigquery.Client:
+    assert settings.service_account_path is not None
+    return bigquery.Client.from_service_account_json(
+        str(settings.service_account_path)
+    )
+    
 
 
 class DIContainer(DeclarativeContainer):
+    settings = providers.Factory(AppSettings)
     # settings
     mf_gcs_location = providers.Factory(GCSLocation)
     # clients
-    storage_client = providers.Singleton(storage.Client)
-    bq_client = providers.Singleton(bigquery.Client)
+    storage_client = providers.Singleton(inject_storage_client, settings=settings)
+    bq_client = providers.Singleton(inject_bq_client, settings=settings)
     # ext
     gcs_handler = providers.ThreadLocalSingleton(
         GCSHandler,

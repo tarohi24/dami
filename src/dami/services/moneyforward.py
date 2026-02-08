@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 import datetime
 import json
+from pathlib import Path
 from typing import cast
 
 import polars as pl
@@ -44,6 +45,18 @@ class MoneyForwardService:
             table="moneyforward",
             fields=[BQField(**col) for col in columns],
         )
+
+    def upload_csv_to_gcs(self, local_path: Path) -> None:
+        filename = local_path.name
+        loc = GCSLocation(
+            bucket=self.gcs_dir.bucket,
+            path=f"{self.gcs_dir.path}/{filename}",
+        )
+        self.gcs_handler.upload_bytes(
+            data=local_path.read_bytes(),
+            loc=loc,
+        )
+        logger.info(f"Uploaded {local_path} to GCS: {loc.get_uri()}")
 
     def insert_latest_csv(self) -> None:
         last_csv_path = self.gcs_handler.get_latest_blob(self.gcs_dir, suffix=".csv")

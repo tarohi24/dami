@@ -1,30 +1,17 @@
 import pytest
 
 from dami.container import AppSettings, DIContainer
-from dami.settings import PROJECT_ROOT
+from dami.settings import SERVICE_ACCOUNT_PATH
 from dependency_injector import providers
 
-from google.cloud import storage
-from google.cloud import bigquery
 
 
 @pytest.fixture
 def container() -> DIContainer:
     app_settings = AppSettings(
         environemnt="dev",
-        service_account_path=(
-            PROJECT_ROOT / "terraform/.secrets/runner-service-account-key.json"
-        ),
+        service_account_path=SERVICE_ACCOUNT_PATH,
     )
     container = DIContainer()
-    container.storage_client.override(
-        providers.Object(
-            storage.Client.from_service_account_json(app_settings.service_account_path)
-        )
-    )
-    container.bq_client.override(
-        providers.Object(
-            bigquery.Client.from_service_account_json(app_settings.service_account_path)
-        )
-    )
+    container.settings.override(providers.Object(app_settings))
     return container
