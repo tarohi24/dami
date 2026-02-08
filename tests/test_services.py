@@ -20,6 +20,7 @@ class TestMoneyForwardService:
         )
         return container.mf_service()
 
+    @pytest.mark.skip(reason="Requires actual GCS and BQ access")
     def test_insert(self, service: MoneyForwardService):
         service.insert_latest_csv()
 

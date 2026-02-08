@@ -35,7 +35,7 @@ class TestGCSHandler:
         # upload
         handler.upload_bytes(df.write_csv().encode("utf-8"), loc)
         # download
-        fetched_df = handler.download_df(blob=handler.get_blob(loc))
+        fetched_df = handler.download_df(blob=handler.get_blob(loc), str_encoding="utf-8")
         assert df.equals(fetched_df)
         # cleanup
         handler.delete_blob(loc)
@@ -87,7 +87,7 @@ class TestGCSHandler:
         handler.upload_bytes(b"some data", loc)
         blob = handler.get_blob(loc)
         with pytest.raises(UnsupportedFileTypeError):
-            handler.download_df(blob)
+            handler.download_df(blob, str_encoding=None)
         handler.delete_blob(loc)
 
     def test_delete_blob(self, handler: GCSHandler):
@@ -193,7 +193,12 @@ class TestBQPolarsHandler:
         # (3) fetch
         fetch_query = f"SELECT * FROM `{sample_table.project}.{sample_table.dataset}.{sample_table.table}` WHERE id = @id"
         fetch_params = {"id": 1}
-        fetched_df = bq_handler.fetch_df(fetch_query, fetch_params)
+        fetched_df = bq_handler.fetch_df(
+            query=fetch_query,
+            table=sample_table,
+            fields_to_fetch=["id", "name", "value"],
+            params=fetch_params,
+        )
 
         # (4) check if the update properly takes place
         assert fetched_df.height == 1

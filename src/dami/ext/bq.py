@@ -69,7 +69,7 @@ def _validate_field(bq_field: BQField, polars_dtype: pl.DataType) -> None:
 
 
 def _create_query_job_config_from_python(
-    params: dict[str, PythonTypeForBQ],
+    params: Mapping[str, PythonTypeForBQ],
 ) -> bq.QueryJobConfig:
     query_params: list[BQQueryParameter] = []
     for name, value in params.items():
@@ -159,7 +159,7 @@ class BQPolarsHandler:
         query: BQQuery,
         table: BQTable,
         fields_to_fetch: list[str],
-        params: dict[str, PythonTypeForBQ],
+        params: Mapping[str, PythonTypeForBQ],
     ) -> pl.DataFrame:
         job_config = _create_query_job_config_from_python(params)
         field_mapping = {

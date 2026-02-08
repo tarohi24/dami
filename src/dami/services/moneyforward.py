@@ -68,3 +68,6 @@ class MoneyForwardService:
         # delete the files
         self.bq_handler.insert_df(df, self.bq_table)
         logger.info("Inserted latest CSV data into BigQuery")
+
+
+
